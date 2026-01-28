@@ -581,6 +581,18 @@
             sendBtn.disabled = true;
             sendBtn.innerHTML = '<span class="loading"></span>';
 
+            // 检测用户提问的语言
+            const userLang = detectLanguage(message);
+            let systemPrompt = '';
+            
+            if (userLang === 'zh-CN') {
+                systemPrompt = '你是专业的小儿心脏外科医疗助手。请用中文简洁专业地回答。提醒：建议仅供参考，不能替代医生判断。';
+            } else if (userLang === 'de-DE') {
+                systemPrompt = 'Sie sind ein professioneller Assistent für pädiatrische Herzchirurgie. Antworten Sie präzise auf Deutsch. Hinweis: Nur Referenz, ersetzt keine medizinische Beurteilung.';
+            } else {
+                systemPrompt = 'You are a professional pediatric cardiac surgery assistant. Answer concisely in English. Note: For reference only, not a substitute for professional medical judgment.';
+            }
+
             try {
                 const response = await fetch('/.netlify/functions/chat', {
                     method: 'POST',
@@ -592,7 +604,7 @@
                         messages: [
                             {
                                 role: 'system',
-                                content: '你是一个专业的小儿心脏外科医疗助手。请简洁专业地回答，直接给出关键信息。涉及专业术语时提供英文或德文对照。提醒：建议仅供参考，不能替代医生的专业判断。'
+                                content: systemPrompt
                             },
                             ...chatHistory,
                             { role: 'user', content: message }
@@ -727,10 +739,18 @@
                 synthesis.cancel();
             }
 
-            const utterance = new SpeechSynthesisUtterance(text);
+            // 清理文本：移除emojis、星号、破折号等干扰符号
+            const cleanedText = cleanTextForSpeech(text);
+            
+            if (!cleanedText.trim()) {
+                console.log('清理后文本为空，跳过朗读');
+                return;
+            }
+
+            const utterance = new SpeechSynthesisUtterance(cleanedText);
             
             // 智能检测语言
-            const detectedLang = detectLanguage(text);
+            const detectedLang = detectLanguage(cleanedText);
             utterance.lang = detectedLang;
             
             // 根据语言调整语速
@@ -746,6 +766,33 @@
             utterance.volume = 1;
             
             synthesis.speak(utterance);
+        }
+
+        // 清理文本用于语音播放
+        function cleanTextForSpeech(text) {
+            return text
+                // 移除所有emojis（包括各种Unicode表情符号）
+                .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F000}-\u{1F02F}]|[\u{1F0A0}-\u{1F0FF}]|[\u{1F100}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{1F910}-\u{1F96B}]|[\u{1F980}-\u{1F9E0}]/gu, '')
+                // 移除常见表情符号
+                .replace(/[😀-🙏🌀-🗿🚀-🛿✂-➰Ⓜ-🉑]/g, '')
+                // 移除星号
+                .replace(/\*+/g, '')
+                // 移除中文破折号
+                .replace(/——+/g, '')
+                // 移除英文破折号
+                .replace(/--+/g, '')
+                .replace(/—+/g, '')
+                // 移除下划线
+                .replace(/_+/g, ' ')
+                // 移除多个井号标记
+                .replace(/#+/g, '')
+                // 移除特殊标记符号
+                .replace(/[●○■□◆◇★☆▲△▼▽]/g, '')
+                // 移除项目符号
+                .replace(/[•·]/g, '')
+                // 清理多余空格
+                .replace(/\s+/g, ' ')
+                .trim();
         }
 
         // 语言检测函数
@@ -781,8 +828,15 @@
                 synthesis.cancel();
             }
 
-            const text = translationText.textContent;
-            const utterance = new SpeechSynthesisUtterance(text);
+            // 清理文本
+            const cleanedText = cleanTextForSpeech(translationText.textContent);
+            
+            if (!cleanedText.trim()) {
+                console.log('清理后文本为空，跳过朗读');
+                return;
+            }
+
+            const utterance = new SpeechSynthesisUtterance(cleanedText);
             utterance.lang = lang;
             
             // 根据语言调整语速
