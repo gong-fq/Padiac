@@ -775,38 +775,53 @@
             synthesis.speak(utterance);
         }
 
-        // 清理文本用于语音播放
+        // 清理文本用于语音播放（简化安全版本）
         function cleanTextForSpeech(text) {
-            return text
-                // 移除常见emojis（简化版正则）
-                .replace(/[\u{1F600}-\u{1F64F}]/gu, '') // 表情符号
-                .replace(/[\u{1F300}-\u{1F5FF}]/gu, '') // 符号和图标
-                .replace(/[\u{1F680}-\u{1F6FF}]/gu, '') // 交通和地图
-                .replace(/[\u{1F1E0}-\u{1F1FF}]/gu, '') // 旗帜
-                .replace(/[\u{2600}-\u{26FF}]/gu, '')   // 杂项符号
-                .replace(/[\u{2700}-\u{27BF}]/gu, '')   // 装饰符号
-                .replace(/[\u{FE00}-\u{FE0F}]/gu, '')   // 变体选择器
-                .replace(/[\u{1F900}-\u{1F9FF}]/gu, '') // 补充符号
-                // 移除常见emoji字符
-                .replace(/[😀-🙏🌀-🗿🚀-🛿💀-💯]/g, '')
-                // 移除星号
-                .replace(/\*+/g, '')
-                // 移除中文破折号
-                .replace(/——+/g, ' ')
-                // 移除英文破折号
-                .replace(/--+/g, ' ')
-                .replace(/—+/g, ' ')
-                // 移除下划线
-                .replace(/_+/g, ' ')
-                // 移除多个井号标记
-                .replace(/#+/g, '')
-                // 移除特殊标记符号
-                .replace(/[●○■□◆◇★☆▲△▼▽]/g, '')
-                // 移除项目符号
-                .replace(/[•·]/g, '')
-                // 清理多余空格
-                .replace(/\s+/g, ' ')
-                .trim();
+            let cleaned = text;
+            
+            // 方法1: 移除常见emoji（使用try-catch保护）
+            try {
+                cleaned = cleaned.replace(/[\u{1F600}-\u{1F64F}]/gu, '');
+                cleaned = cleaned.replace(/[\u{1F300}-\u{1F5FF}]/gu, '');
+                cleaned = cleaned.replace(/[\u{1F680}-\u{1F6FF}]/gu, '');
+                cleaned = cleaned.replace(/[\u{1F900}-\u{1F9FF}]/gu, '');
+                cleaned = cleaned.replace(/[\u{2600}-\u{26FF}]/gu, '');
+                cleaned = cleaned.replace(/[\u{2700}-\u{27BF}]/gu, '');
+            } catch(e) {
+                console.log('Emoji清理出错，跳过:', e);
+            }
+            
+            // 方法2: 逐字符过滤（备用方法）
+            if (cleaned === text) {
+                let result = '';
+                for (let i = 0; i < text.length; i++) {
+                    const code = text.charCodeAt(i);
+                    // 保留基本文字和标点（排除emoji范围）
+                    if (code < 0xD800 || (code > 0xDFFF && code < 0xFE00)) {
+                        result += text[i];
+                    }
+                }
+                cleaned = result;
+            }
+            
+            // 移除其他特殊符号（安全方法）
+            cleaned = cleaned.replace(/\*/g, '');            // 星号
+            cleaned = cleaned.replace(/——/g, ' ');           // 中文破折号
+            cleaned = cleaned.replace(/--/g, ' ');           // 英文破折号
+            cleaned = cleaned.replace(/—/g, ' ');            // em破折号
+            cleaned = cleaned.replace(/_/g, ' ');            // 下划线
+            cleaned = cleaned.replace(/#/g, '');             // 井号
+            cleaned = cleaned.replace(/●/g, '');             // 圆点
+            cleaned = cleaned.replace(/○/g, '');
+            cleaned = cleaned.replace(/■/g, '');
+            cleaned = cleaned.replace(/□/g, '');
+            cleaned = cleaned.replace(/★/g, '');
+            cleaned = cleaned.replace(/☆/g, '');
+            cleaned = cleaned.replace(/•/g, '');
+            cleaned = cleaned.replace(/·/g, '');
+            cleaned = cleaned.replace(/\s+/g, ' ');          // 多余空格
+            
+            return cleaned.trim();
         }
 
         // 语言检测函数
@@ -1017,7 +1032,7 @@
             }).join('');
         }
 
-        function deleteReminder(id) {
+        window.deleteReminder = function(id) {
             if (confirm('确定要删除此提醒吗？')) {
                 reminders = reminders.filter(r => r.id !== id);
                 localStorage.setItem('reminders', JSON.stringify(reminders));
