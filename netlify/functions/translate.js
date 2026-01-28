@@ -51,10 +51,10 @@ exports.handler = async (event, context) => {
         model: 'deepseek-chat',
         messages: [{
           role: 'user',
-          content: `请翻译以下小儿心脏外科医学术语，提供中文、英文和德文的对应翻译，并简要说明其医学含义。源语言：${langMap[sourceLang]}。术语：${term}`
+          content: `请简洁翻译以下小儿心脏外科医学术语，提供中文、英文和德文对照及简要医学含义。源语言：${langMap[sourceLang]}。术语：${term}`
         }],
-        temperature: 0.3,
-        max_tokens: 1000
+        temperature: 0.2,
+        max_tokens: 800
       })
     });
 

@@ -28,7 +28,7 @@ exports.handler = async (event, context) => {
 
   try {
     // Parse request body
-    const { messages, model = 'deepseek-chat', temperature = 0.7, max_tokens = 2000 } = JSON.parse(event.body);
+    const { messages, model = 'deepseek-chat', temperature = 0.5, max_tokens = 1000 } = JSON.parse(event.body);
 
     // Validate API key from environment variable
     const apiKey = process.env.DEEPSEEK_API_KEY;

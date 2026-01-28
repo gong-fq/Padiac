@@ -326,6 +326,98 @@
             to { transform: rotate(360deg); }
         }
 
+        /* 心跳加载动画 */
+        .typing-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            max-width: 80px;
+        }
+
+        .typing-indicator .heart {
+            font-size: 24px;
+            animation: heartbeat 1.2s ease-in-out infinite;
+        }
+
+        .typing-indicator .dot {
+            width: 8px;
+            height: 8px;
+            background: #667eea;
+            border-radius: 50%;
+            animation: bounce 1.4s ease-in-out infinite;
+        }
+
+        .typing-indicator .dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator .dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            10%, 30% { transform: scale(1.1); }
+            20%, 40% { transform: scale(1); }
+        }
+
+        @keyframes bounce {
+            0%, 60%, 100% { 
+                transform: translateY(0);
+                opacity: 0.7;
+            }
+            30% { 
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+
+        /* 思考中动画 */
+        .thinking-animation {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 12px 16px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+        }
+
+        .thinking-animation .bubble {
+            width: 10px;
+            height: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            animation: think 1.5s ease-in-out infinite;
+        }
+
+        .thinking-animation .bubble:nth-child(1) {
+            animation-delay: 0s;
+        }
+
+        .thinking-animation .bubble:nth-child(2) {
+            animation-delay: 0.3s;
+        }
+
+        .thinking-animation .bubble:nth-child(3) {
+            animation-delay: 0.6s;
+        }
+
+        @keyframes think {
+            0%, 100% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+        }
+
         .error-message {
             background: #f8d7da;
             color: #721c24;
@@ -339,8 +431,7 @@
     <div class="container">
         <div class="header">
             <h1>🫀 Pediatric Cardiac Surgery助手</h1>
-                     <p>婴幼儿心外科智能辅助系统 </p>
-                     <p>天津胸科医院心血管科医师刘菁设计</p>
+            <p>婴幼儿心外科智能辅助系统</p>
         </div>
 
         <div class="disclaimer">
@@ -477,6 +568,9 @@
             addMessage(message, 'user');
             input.value = '';
 
+            // 添加思考动画
+            const thinkingId = addThinkingAnimation();
+
             const sendBtn = document.getElementById('sendBtn');
             sendBtn.disabled = true;
             sendBtn.innerHTML = '<span class="loading"></span>';
@@ -492,15 +586,18 @@
                         messages: [
                             {
                                 role: 'system',
-                                content: '你是一个专业的小儿心脏外科医疗助手。你的回答应该专业、准确，并基于循证医学。请用中文回答，涉及专业术语时可以提供英文或德文对照。重要提醒：你的建议仅供参考，不能替代医生的专业判断。'
+                                content: '你是一个专业的小儿心脏外科医疗助手。请简洁专业地回答，直接给出关键信息。涉及专业术语时提供英文或德文对照。提醒：建议仅供参考，不能替代医生的专业判断。'
                             },
                             ...chatHistory,
                             { role: 'user', content: message }
                         ],
-                        temperature: 0.7,
-                        max_tokens: 2000
+                        temperature: 0.5,
+                        max_tokens: 1000
                     })
                 });
+
+                // 移除思考动画
+                removeThinkingAnimation(thinkingId);
 
                 if (!response.ok) {
                     const errorData = await response.json();
@@ -515,11 +612,37 @@
 
                 addMessage(reply, 'assistant', true);
             } catch (error) {
+                removeThinkingAnimation(thinkingId);
                 addMessage('抱歉，连接AI服务时出现错误：' + error.message + '。请稍后重试。', 'assistant');
                 console.error('Error:', error);
             } finally {
                 sendBtn.disabled = false;
                 sendBtn.innerHTML = '发送';
+            }
+        }
+
+        function addThinkingAnimation() {
+            const messagesDiv = document.getElementById('chatMessages');
+            const thinkingDiv = document.createElement('div');
+            const thinkingId = 'thinking-' + Date.now();
+            thinkingDiv.id = thinkingId;
+            thinkingDiv.className = 'message assistant';
+            thinkingDiv.innerHTML = `
+                <div class="thinking-animation">
+                    <div class="bubble"></div>
+                    <div class="bubble"></div>
+                    <div class="bubble"></div>
+                </div>
+            `;
+            messagesDiv.appendChild(thinkingDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            return thinkingId;
+        }
+
+        function removeThinkingAnimation(thinkingId) {
+            const thinkingDiv = document.getElementById(thinkingId);
+            if (thinkingDiv) {
+                thinkingDiv.remove();
             }
         }
 
@@ -609,7 +732,17 @@
                 return;
             }
 
-            resultDiv.innerHTML = '<div style="text-align: center;"><span class="loading" style="border-color: #667eea; border-top-color: transparent;"></span> 翻译中...</div>';
+            resultDiv.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <div class="typing-indicator" style="margin: 0 auto;">
+                        <span class="heart">💙</span>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                    <p style="margin-top: 15px; color: #667eea;">正在翻译中...</p>
+                </div>
+            `;
 
             try {
                 const response = await fetch('/.netlify/functions/translate', {
