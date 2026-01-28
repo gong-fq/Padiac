@@ -540,6 +540,13 @@
     </div>
 
     <script>
+        'use strict';
+        
+        // 全局错误处理
+        window.addEventListener('error', function(e) {
+            console.error('全局错误:', e.message, e.filename, e.lineno, e.colno, e.error);
+        });
+
         // 全局变量
         let chatHistory = [];
         let reminders = JSON.parse(localStorage.getItem('reminders')) || [];
@@ -547,7 +554,7 @@
         let synthesis = window.speechSynthesis;
 
         // 标签切换
-        function switchTab(index) {
+        window.switchTab = function(index) {
             const tabs = document.querySelectorAll('.tab');
             const contents = document.querySelectorAll('.tab-content');
             
@@ -562,10 +569,10 @@
             if (index === 2) {
                 displayReminders();
             }
-        }
+        };
 
         // AI助手功能
-        async function sendMessage() {
+        window.sendMessage = async function() {
             const input = document.getElementById('chatInput');
             const message = input.value.trim();
             
@@ -693,14 +700,14 @@
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
 
-        function handleKeyPress(event) {
+        window.handleKeyPress = function(event) {
             if (event.key === 'Enter') {
                 sendMessage();
             }
         }
 
         // 语音输入
-        function startVoiceInput() {
+        window.startVoiceInput = function() {
             if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
                 alert('您的浏览器不支持语音识别功能');
                 return;
@@ -771,17 +778,24 @@
         // 清理文本用于语音播放
         function cleanTextForSpeech(text) {
             return text
-                // 移除所有emojis（包括各种Unicode表情符号）
-                .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F000}-\u{1F02F}]|[\u{1F0A0}-\u{1F0FF}]|[\u{1F100}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{1F910}-\u{1F96B}]|[\u{1F980}-\u{1F9E0}]/gu, '')
-                // 移除常见表情符号
-                .replace(/[😀-🙏🌀-🗿🚀-🛿✂-➰Ⓜ-🉑]/g, '')
+                // 移除常见emojis（简化版正则）
+                .replace(/[\u{1F600}-\u{1F64F}]/gu, '') // 表情符号
+                .replace(/[\u{1F300}-\u{1F5FF}]/gu, '') // 符号和图标
+                .replace(/[\u{1F680}-\u{1F6FF}]/gu, '') // 交通和地图
+                .replace(/[\u{1F1E0}-\u{1F1FF}]/gu, '') // 旗帜
+                .replace(/[\u{2600}-\u{26FF}]/gu, '')   // 杂项符号
+                .replace(/[\u{2700}-\u{27BF}]/gu, '')   // 装饰符号
+                .replace(/[\u{FE00}-\u{FE0F}]/gu, '')   // 变体选择器
+                .replace(/[\u{1F900}-\u{1F9FF}]/gu, '') // 补充符号
+                // 移除常见emoji字符
+                .replace(/[😀-🙏🌀-🗿🚀-🛿💀-💯]/g, '')
                 // 移除星号
                 .replace(/\*+/g, '')
                 // 移除中文破折号
-                .replace(/——+/g, '')
+                .replace(/——+/g, ' ')
                 // 移除英文破折号
-                .replace(/--+/g, '')
-                .replace(/—+/g, '')
+                .replace(/--+/g, ' ')
+                .replace(/—+/g, ' ')
                 // 移除下划线
                 .replace(/_+/g, ' ')
                 // 移除多个井号标记
@@ -820,7 +834,7 @@
         }
 
         // 翻译结果朗读（指定语言）
-        function speakTranslation(lang) {
+        window.speakTranslation = function(lang) {
             const translationText = document.getElementById('translationText');
             if (!translationText) return;
 
@@ -865,7 +879,7 @@
         }
 
         // 停止所有语音播放
-        function stopSpeaking() {
+        window.stopSpeaking = function() {
             if (synthesis.speaking) {
                 synthesis.cancel();
                 console.log('已停止朗读');
@@ -873,7 +887,7 @@
         }
 
         // 医学辞典功能
-        async function translateTerm() {
+        window.translateTerm = async function() {
             const input = document.getElementById('dictInput').value.trim();
             const sourceLang = document.getElementById('sourceLang').value;
             const resultDiv = document.getElementById('translationResult');
@@ -939,7 +953,7 @@
         }
 
         // 随访提醒功能
-        function addReminder() {
+        window.addReminder = function() {
             const patientName = document.getElementById('patientName').value.trim();
             const surgeryType = document.getElementById('surgeryType').value.trim();
             const followupDate = document.getElementById('followupDate').value;
