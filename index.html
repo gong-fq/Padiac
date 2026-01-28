@@ -432,6 +432,7 @@
         <div class="header">
             <h1>🫀 Pediatric Cardiac Surgery助手</h1>
             <p>婴幼儿心外科智能辅助系统</p>
+            <p>天津胸科医院心血管外科医师刘菁设计</p>
         </div>
 
         <div class="disclaimer">
@@ -458,8 +459,13 @@
                     <button class="btn btn-primary" onclick="sendMessage()" id="sendBtn">发送</button>
                 </div>
             </div>
-            <div style="margin-top: 15px; text-align: center; color: #6c757d; font-size: 0.9em;">
-                💡 提示：可使用语音输入，AI回复支持语音播放
+            <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="color: #6c757d; font-size: 0.9em;">
+                    💡 提示：每条消息都可点击🔊按钮朗读，支持中英德三语自动识别
+                </div>
+                <button onclick="stopSpeaking()" class="btn btn-secondary" style="padding: 8px 16px;">
+                    🔇 停止朗读
+                </button>
             </div>
         </div>
 
@@ -651,18 +657,25 @@
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${sender}`;
             
-            if (enableTTS && sender === 'assistant') {
-                const textSpan = document.createElement('span');
-                textSpan.textContent = text;
-                const ttsBtn = document.createElement('button');
-                ttsBtn.innerHTML = '🔊';
-                ttsBtn.style.cssText = 'margin-left: 10px; background: none; border: none; cursor: pointer; font-size: 1.2em;';
-                ttsBtn.onclick = () => speakText(text);
-                messageDiv.appendChild(textSpan);
-                messageDiv.appendChild(ttsBtn);
-            } else {
-                messageDiv.textContent = text;
-            }
+            // 为所有消息添加TTS功能
+            const textSpan = document.createElement('span');
+            textSpan.textContent = text;
+            
+            const ttsBtn = document.createElement('button');
+            ttsBtn.innerHTML = '🔊';
+            ttsBtn.style.cssText = 'margin-left: 10px; background: none; border: none; cursor: pointer; font-size: 1.2em; opacity: 0.7; transition: opacity 0.3s;';
+            ttsBtn.title = '点击朗读';
+            ttsBtn.onmouseover = () => ttsBtn.style.opacity = '1';
+            ttsBtn.onmouseout = () => ttsBtn.style.opacity = '0.7';
+            ttsBtn.onclick = () => {
+                speakText(text);
+                // 视觉反馈
+                ttsBtn.innerHTML = '🔉';
+                setTimeout(() => ttsBtn.innerHTML = '🔊', 300);
+            };
+            
+            messageDiv.appendChild(textSpan);
+            messageDiv.appendChild(ttsBtn);
             
             messagesDiv.appendChild(messageDiv);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -708,17 +721,101 @@
             recognition.start();
         }
 
-        // 文字转语音
+        // 文字转语音 - 智能语言检测
         function speakText(text) {
             if (synthesis.speaking) {
                 synthesis.cancel();
             }
 
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'zh-CN';
-            utterance.rate = 0.9;
+            
+            // 智能检测语言
+            const detectedLang = detectLanguage(text);
+            utterance.lang = detectedLang;
+            
+            // 根据语言调整语速
+            if (detectedLang === 'de-DE') {
+                utterance.rate = 0.85; // 德语稍慢
+            } else if (detectedLang === 'en-US') {
+                utterance.rate = 0.9;  // 英语正常
+            } else {
+                utterance.rate = 0.9;  // 中文正常
+            }
+            
             utterance.pitch = 1;
+            utterance.volume = 1;
+            
             synthesis.speak(utterance);
+        }
+
+        // 语言检测函数
+        function detectLanguage(text) {
+            // 检测中文字符（包括简体和繁体）
+            const chineseRegex = /[\u4e00-\u9fa5]/;
+            // 检测德语特殊字符
+            const germanRegex = /[äöüßÄÖÜ]/;
+            // 德语常用词
+            const germanWords = /\b(und|der|die|das|ist|sind|haben|werden|mit|von|für|auf|bei|durch)\b/i;
+            
+            // 计算各种字符的比例
+            const chineseCount = (text.match(chineseRegex) || []).length;
+            const hasGermanChars = germanRegex.test(text);
+            const hasGermanWords = germanWords.test(text);
+            
+            // 判断逻辑
+            if (chineseCount > text.length * 0.3) {
+                return 'zh-CN'; // 中文占比超过30%
+            } else if (hasGermanChars || hasGermanWords) {
+                return 'de-DE'; // 有德语特征
+            } else {
+                return 'en-US'; // 默认英语
+            }
+        }
+
+        // 翻译结果朗读（指定语言）
+        function speakTranslation(lang) {
+            const translationText = document.getElementById('translationText');
+            if (!translationText) return;
+
+            if (synthesis.speaking) {
+                synthesis.cancel();
+            }
+
+            const text = translationText.textContent;
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = lang;
+            
+            // 根据语言调整语速
+            if (lang === 'de-DE') {
+                utterance.rate = 0.85;
+            } else if (lang === 'en-US') {
+                utterance.rate = 0.9;
+            } else {
+                utterance.rate = 0.9;
+            }
+            
+            utterance.pitch = 1;
+            utterance.volume = 1;
+            
+            // 朗读完成后的反馈
+            utterance.onend = () => {
+                console.log('朗读完成');
+            };
+            
+            utterance.onerror = (event) => {
+                console.error('朗读出错:', event);
+                alert('朗读失败，您的浏览器可能不支持该语言的语音合成');
+            };
+            
+            synthesis.speak(utterance);
+        }
+
+        // 停止所有语音播放
+        function stopSpeaking() {
+            if (synthesis.speaking) {
+                synthesis.cancel();
+                console.log('已停止朗读');
+            }
         }
 
         // 医学辞典功能
@@ -767,7 +864,18 @@
                 resultDiv.innerHTML = `
                     <div class="term-card">
                         <h3>📖 翻译结果</h3>
-                        <div style="white-space: pre-wrap; line-height: 1.8;">${translation}</div>
+                        <div style="white-space: pre-wrap; line-height: 1.8;" id="translationText">${translation}</div>
+                        <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button onclick="speakTranslation('zh-CN')" class="btn btn-secondary" style="padding: 8px 16px;">
+                                🔊 中文朗读
+                            </button>
+                            <button onclick="speakTranslation('en-US')" class="btn btn-secondary" style="padding: 8px 16px;">
+                                🔊 English
+                            </button>
+                            <button onclick="speakTranslation('de-DE')" class="btn btn-secondary" style="padding: 8px 16px;">
+                                🔊 Deutsch
+                            </button>
+                        </div>
                     </div>
                 `;
             } catch (error) {
