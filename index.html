@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pediatric Cardiac Surgery助手</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .disclaimer {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+
+        .disclaimer strong {
+            color: #856404;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            background: transparent;
+            font-size: 1em;
+            font-weight: 500;
+        }
+
+        .tab:hover {
+            background: #e9ecef;
+        }
+
+        .tab.active {
+            background: white;
+            border-bottom: 3px solid #667eea;
+            color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+            animation: fadeIn 0.3s;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* AI助手样式 */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 500px;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            max-width: 80%;
+            line-height: 1.5;
+        }
+
+        .message.user {
+            background: #667eea;
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .message.assistant {
+            background: white;
+            border: 1px solid #dee2e6;
+        }
+
+        .chat-input-container {
+            display: flex;
+            gap: 10px;
+            padding: 15px;
+            background: white;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 25px;
+            font-size: 1em;
+            outline: none;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 医学辞典样式 */
+        .dictionary-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            font-size: 1em;
+        }
+
+        .lang-selector {
+            padding: 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            font-size: 1em;
+            cursor: pointer;
+        }
+
+        .translation-result {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            min-height: 200px;
+            margin-top: 20px;
+        }
+
+        .term-card {
+            background: white;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        /* 随访提醒样式 */
+        .reminder-form {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        .reminder-list {
+            margin-top: 20px;
+        }
+
+        .reminder-item {
+            background: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #28a745;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .reminder-item.overdue {
+            border-left-color: #dc3545;
+        }
+
+        .reminder-item.upcoming {
+            border-left-color: #ffc107;
+        }
+
+        /* 参考资源样式 */
+        .resources {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .resources h3 {
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .resources ul {
+            list-style: none;
+        }
+
+        .resources li {
+            padding: 10px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .resources a {
+            color: #667eea;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .resources a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🫀 Pediatric Cardiac Surgery助手</h1>
+                     <p>婴幼儿心外科智能辅助系统 </p>
+                     <p>天津胸科医院心血管科医师刘菁设计</p>
+        </div>
+
+        <div class="disclaimer">
+            <strong>⚠️ 免责声明 / Disclaimer:</strong><br>
+            本系统提供的信息仅供临床婴幼儿心外科医生参考，不能代替专业医疗判断。所有临床决策必须结合患儿的具体情况、最新医学证据和医生的专业经验综合判断。使用本系统即表示您同意此免责声明。
+            <br><br>
+            <em>The information provided by this system is for reference by clinical pediatric cardiac surgeons only and cannot replace professional medical judgment. All clinical decisions must be made based on the specific conditions of the patient, latest medical evidence, and professional experience of physicians.</em>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab(0)">🤖 AI助手</button>
+            <button class="tab" onclick="switchTab(1)">📚 医学辞典</button>
+            <button class="tab" onclick="switchTab(2)">⏰ 随访提醒</button>
+            <button class="tab" onclick="switchTab(3)">🔗 参考资源</button>
+        </div>
+
+        <!-- AI助手 -->
+        <div class="tab-content active">
+            <div class="chat-container">
+                <div class="chat-messages" id="chatMessages"></div>
+                <div class="chat-input-container">
+                    <input type="text" class="chat-input" id="chatInput" placeholder="输入您的问题..." onkeypress="handleKeyPress(event)">
+                    <button class="btn btn-secondary" onclick="startVoiceInput()" id="voiceBtn">🎤 语音</button>
+                    <button class="btn btn-primary" onclick="sendMessage()" id="sendBtn">发送</button>
+                </div>
+            </div>
+            <div style="margin-top: 15px; text-align: center; color: #6c757d; font-size: 0.9em;">
+                💡 提示：可使用语音输入，AI回复支持语音播放
+            </div>
+        </div>
+
+        <!-- 医学辞典 -->
+        <div class="tab-content">
+            <div class="dictionary-container">
+                <h2 style="margin-bottom: 20px;">医学术语翻译</h2>
+                <div class="search-box">
+                    <input type="text" class="search-input" id="dictInput" placeholder="输入医学术语...">
+                    <select class="lang-selector" id="sourceLang">
+                        <option value="zh">中文</option>
+                        <option value="en">English</option>
+                        <option value="de">Deutsch</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="translateTerm()">翻译</button>
+                </div>
+                <div class="translation-result" id="translationResult">
+                    <p style="color: #6c757d;">在上方输入术语进行翻译...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 随访提醒 -->
+        <div class="tab-content">
+            <h2 style="margin-bottom: 20px;">患者随访管理</h2>
+            <div class="reminder-form">
+                <h3>添加随访提醒</h3>
+                <div class="form-group">
+                    <label>患者姓名/ID:</label>
+                    <input type="text" id="patientName" placeholder="输入患者标识">
+                </div>
+                <div class="form-group">
+                    <label>手术类型:</label>
+                    <input type="text" id="surgeryType" placeholder="例如：VSD修补术">
+                </div>
+                <div class="form-group">
+                    <label>随访日期:</label>
+                    <input type="date" id="followupDate">
+                </div>
+                <div class="form-group">
+                    <label>备注:</label>
+                    <textarea id="notes" rows="3" placeholder="随访注意事项..."></textarea>
+                </div>
+                <button class="btn btn-primary" onclick="addReminder()">添加提醒</button>
+            </div>
+            <div class="reminder-list" id="reminderList"></div>
+        </div>
+
+        <!-- 参考资源 -->
+        <div class="tab-content">
+            <h2 style="margin-bottom: 20px;">主要参考医疗机构</h2>
+            <div class="resources">
+                <h3>🌍 国际顶尖儿童心脏中心</h3>
+                <ul>
+                    <li>🇩🇪 <a href="https://www.dhzc.charite.de/en/" target="_blank">Deutsches Herzzentrum der Charité (DHZC)</a> - 柏林夏里特心脏中心</li>
+                    <li>🇩🇪 <a href="https://www.dhzb.de" target="_blank">Deutsches Herzzentrum Berlin (DHZB)</a> - 德国柏林心脏中心</li>
+                    <li>🇩🇪 <a href="https://www.heidelberg-university-hospital.com" target="_blank">Heidelberg University Hospital</a> - 海德堡大学医院</li>
+                    <li>🇩🇪 <a href="https://www.lmu-klinikum.de" target="_blank">LMU Klinikum München</a> - 慕尼黑大学医院</li>
+                    <li>🇺🇸 <a href="https://www.texaschildrens.org/heart" target="_blank">Texas Children's Heart Center</a> - 德克萨斯儿童医院心脏中心</li>
+                    <li>🇺🇸 <a href="https://www.chop.edu/centers-programs/cardiac-center" target="_blank">Children's Hospital of Philadelphia - Cardiac Center</a> - 费城儿童医院心脏中心</li>
+                    <li>🇺🇸 <a href="https://www.childrenshospital.org/centers/heart-center" target="_blank">Boston Children's Hospital - Heart Center</a> - 波士顿儿童医院心脏中心</li>
+                </ul>
+                
+                <h3 style="margin-top: 25px;">🇨🇳 中国主要儿童心脏中心</h3>
+                <ul>
+                    <li><a href="https://www.scmc.com.cn/list/1404/2617.html" target="_blank">上海交通大学医学院附属上海儿童医学中心 - 心胸外科</a></li>
+                    <li><a href="https://www.fuwaihospital.org/Departments/Main/Detail/60" target="_blank">中国医学科学院阜外医院 - 小儿心脏外科中心</a></li>
+                    <li><a href="https://www.301hospital.com.cn/hospital/sixth/xexzwk.html" target="_blank">中国人民解放军总医院(301医院) - 小儿心脏外科</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let chatHistory = [];
+        let reminders = JSON.parse(localStorage.getItem('reminders')) || [];
+        let recognition = null;
+        let synthesis = window.speechSynthesis;
+
+        // 标签切换
+        function switchTab(index) {
+            const tabs = document.querySelectorAll('.tab');
+            const contents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach((tab, i) => {
+                tab.classList.toggle('active', i === index);
+            });
+            
+            contents.forEach((content, i) => {
+                content.classList.toggle('active', i === index);
+            });
+
+            if (index === 2) {
+                displayReminders();
+            }
+        }
+
+        // AI助手功能
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+
+            addMessage(message, 'user');
+            input.value = '';
+
+            const sendBtn = document.getElementById('sendBtn');
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<span class="loading"></span>';
+
+            try {
+                const response = await fetch('/.netlify/functions/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: 'deepseek-chat',
+                        messages: [
+                            {
+                                role: 'system',
+                                content: '你是一个专业的小儿心脏外科医疗助手。你的回答应该专业、准确，并基于循证医学。请用中文回答，涉及专业术语时可以提供英文或德文对照。重要提醒：你的建议仅供参考，不能替代医生的专业判断。'
+                            },
+                            ...chatHistory,
+                            { role: 'user', content: message }
+                        ],
+                        temperature: 0.7,
+                        max_tokens: 2000
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'API请求失败');
+                }
+
+                const data = await response.json();
+                const reply = data.choices[0].message.content;
+                
+                chatHistory.push({ role: 'user', content: message });
+                chatHistory.push({ role: 'assistant', content: reply });
+
+                addMessage(reply, 'assistant', true);
+            } catch (error) {
+                addMessage('抱歉，连接AI服务时出现错误：' + error.message + '。请稍后重试。', 'assistant');
+                console.error('Error:', error);
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = '发送';
+            }
+        }
+
+        function addMessage(text, sender, enableTTS = false) {
+            const messagesDiv = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            if (enableTTS && sender === 'assistant') {
+                const textSpan = document.createElement('span');
+                textSpan.textContent = text;
+                const ttsBtn = document.createElement('button');
+                ttsBtn.innerHTML = '🔊';
+                ttsBtn.style.cssText = 'margin-left: 10px; background: none; border: none; cursor: pointer; font-size: 1.2em;';
+                ttsBtn.onclick = () => speakText(text);
+                messageDiv.appendChild(textSpan);
+                messageDiv.appendChild(ttsBtn);
+            } else {
+                messageDiv.textContent = text;
+            }
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        // 语音输入
+        function startVoiceInput() {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                alert('您的浏览器不支持语音识别功能');
+                return;
+            }
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.lang = 'zh-CN';
+            recognition.continuous = false;
+
+            const voiceBtn = document.getElementById('voiceBtn');
+            voiceBtn.innerHTML = '🎤 录音中...';
+            voiceBtn.disabled = true;
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('chatInput').value = transcript;
+            };
+
+            recognition.onerror = (event) => {
+                console.error('语音识别错误:', event.error);
+                alert('语音识别失败，请重试');
+            };
+
+            recognition.onend = () => {
+                voiceBtn.innerHTML = '🎤 语音';
+                voiceBtn.disabled = false;
+            };
+
+            recognition.start();
+        }
+
+        // 文字转语音
+        function speakText(text) {
+            if (synthesis.speaking) {
+                synthesis.cancel();
+            }
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'zh-CN';
+            utterance.rate = 0.9;
+            utterance.pitch = 1;
+            synthesis.speak(utterance);
+        }
+
+        // 医学辞典功能
+        async function translateTerm() {
+            const input = document.getElementById('dictInput').value.trim();
+            const sourceLang = document.getElementById('sourceLang').value;
+            const resultDiv = document.getElementById('translationResult');
+
+            if (!input) {
+                resultDiv.innerHTML = '<p style="color: #dc3545;">请输入要翻译的术语</p>';
+                return;
+            }
+
+            resultDiv.innerHTML = '<div style="text-align: center;"><span class="loading" style="border-color: #667eea; border-top-color: transparent;"></span> 翻译中...</div>';
+
+            try {
+                const response = await fetch('/.netlify/functions/translate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        term: input,
+                        sourceLang: sourceLang
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || '翻译失败');
+                }
+
+                const data = await response.json();
+                const translation = data.choices[0].message.content;
+
+                resultDiv.innerHTML = `
+                    <div class="term-card">
+                        <h3>📖 翻译结果</h3>
+                        <div style="white-space: pre-wrap; line-height: 1.8;">${translation}</div>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = '<p class="error-message">翻译失败：' + error.message + '</p>';
+                console.error('Translation error:', error);
+            }
+        }
+
+        // 随访提醒功能
+        function addReminder() {
+            const patientName = document.getElementById('patientName').value.trim();
+            const surgeryType = document.getElementById('surgeryType').value.trim();
+            const followupDate = document.getElementById('followupDate').value;
+            const notes = document.getElementById('notes').value.trim();
+
+            if (!patientName || !surgeryType || !followupDate) {
+                alert('请填写所有必填字段');
+                return;
+            }
+
+            const reminder = {
+                id: Date.now(),
+                patientName,
+                surgeryType,
+                followupDate,
+                notes,
+                createdAt: new Date().toISOString()
+            };
+
+            reminders.push(reminder);
+            localStorage.setItem('reminders', JSON.stringify(reminders));
+
+            // 清空表单
+            document.getElementById('patientName').value = '';
+            document.getElementById('surgeryType').value = '';
+            document.getElementById('followupDate').value = '';
+            document.getElementById('notes').value = '';
+
+            displayReminders();
+            alert('随访提醒已添加');
+        }
+
+        function displayReminders() {
+            const listDiv = document.getElementById('reminderList');
+            const today = new Date().toISOString().split('T')[0];
+
+            if (reminders.length === 0) {
+                listDiv.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 40px;">暂无随访提醒</p>';
+                return;
+            }
+
+            // 按日期排序
+            reminders.sort((a, b) => new Date(a.followupDate) - new Date(b.followupDate));
+
+            listDiv.innerHTML = reminders.map(reminder => {
+                const followupDate = new Date(reminder.followupDate);
+                const isPast = reminder.followupDate < today;
+                const isUpcoming = !isPast && (new Date(reminder.followupDate) - new Date(today)) / (1000 * 60 * 60 * 24) <= 7;
+                const statusClass = isPast ? 'overdue' : isUpcoming ? 'upcoming' : '';
+
+                return `
+                    <div class="reminder-item ${statusClass}">
+                        <div>
+                            <strong>${reminder.patientName}</strong> - ${reminder.surgeryType}<br>
+                            <small>📅 随访日期: ${reminder.followupDate}</small><br>
+                            ${reminder.notes ? `<small>📝 ${reminder.notes}</small>` : ''}
+                        </div>
+                        <button class="btn btn-secondary" style="padding: 8px 16px;" onclick="deleteReminder(${reminder.id})">删除</button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function deleteReminder(id) {
+            if (confirm('确定要删除此提醒吗？')) {
+                reminders = reminders.filter(r => r.id !== id);
+                localStorage.setItem('reminders', JSON.stringify(reminders));
+                displayReminders();
+            }
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            addMessage('您好！我是小儿心脏外科智能助手。我可以帮您解答专业问题、提供参考信息。请注意，所有建议仅供参考，实际诊疗需结合患儿具体情况由医生判断。', 'assistant');
+        });
+
+        // 检查到期提醒
+        setInterval(() => {
+            const today = new Date().toISOString().split('T')[0];
+            const dueReminders = reminders.filter(r => r.followupDate === today);
+            
+            if (dueReminders.length > 0 && Notification.permission === 'granted') {
+                dueReminders.forEach(reminder => {
+                    new Notification('随访提醒', {
+                        body: `患者 ${reminder.patientName} 今日需要随访 (${reminder.surgeryType})`,
+                        icon: '🫀'
+                    });
+                });
+            }
+        }, 60000); // 每分钟检查一次
+
+        // 请求通知权限
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+    </script>
+</body>
+</html>
