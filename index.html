@@ -824,28 +824,73 @@
             return cleaned;
         }
 
-        // 语言检测函数
+        // 语言检测函数（增强版）
         function detectLanguage(text) {
+            const lowerText = text.toLowerCase();
+            
             // 检测中文字符（包括简体和繁体）
-            const chineseRegex = /[\u4e00-\u9fa5]/;
+            const chineseMatches = text.match(/[\u4e00-\u9fa5]/g);
+            const chineseCount = chineseMatches ? chineseMatches.length : 0;
+            
             // 检测德语特殊字符
-            const germanRegex = /[äöüßÄÖÜ]/;
-            // 德语常用词
-            const germanWords = /\b(und|der|die|das|ist|sind|haben|werden|mit|von|für|auf|bei|durch)\b/i;
+            const hasGermanChars = /[äöüßÄÖÜ]/.test(text);
             
-            // 计算各种字符的比例
-            const chineseCount = (text.match(chineseRegex) || []).length;
-            const hasGermanChars = germanRegex.test(text);
-            const hasGermanWords = germanWords.test(text);
+            // 德语常用词（扩展列表）
+            const germanCommonWords = [
+                'und', 'der', 'die', 'das', 'ist', 'sind', 'haben', 'werden',
+                'mit', 'von', 'für', 'auf', 'bei', 'durch', 'auch', 'nicht',
+                'aber', 'oder', 'kann', 'muss', 'soll', 'wird', 'zum', 'zur'
+            ];
             
-            // 判断逻辑
-            if (chineseCount > text.length * 0.3) {
-                return 'zh-CN'; // 中文占比超过30%
-            } else if (hasGermanChars || hasGermanWords) {
-                return 'de-DE'; // 有德语特征
-            } else {
-                return 'en-US'; // 默认英语
+            // 德语问候语和常用短语
+            const germanPhrases = [
+                'guten morgen', 'guten tag', 'guten abend', 'gute nacht',
+                'wie geht', 'danke', 'bitte', 'entschuldigung', 'tschüss',
+                'auf wiedersehen', 'hallo', 'was ist', 'ich bin', 'ich habe'
+            ];
+            
+            // 检查是否包含德语短语
+            const hasGermanPhrase = germanPhrases.some(phrase => lowerText.includes(phrase));
+            
+            // 检查是否包含多个德语常用词
+            const germanWordCount = germanCommonWords.filter(word => {
+                const regex = new RegExp('\\b' + word + '\\b', 'i');
+                return regex.test(text);
+            }).length;
+            
+            // 判断逻辑（优先级从高到低）
+            
+            // 1. 如果包含德语短语，直接判定为德语
+            if (hasGermanPhrase) {
+                console.log('检测到德语短语');
+                return 'de-DE';
             }
+            
+            // 2. 如果中文字符占比超过30%，判定为中文
+            if (chineseCount > text.length * 0.3) {
+                console.log('检测到中文 (占比超过30%)');
+                return 'zh-CN';
+            }
+            
+            // 3. 如果有德语特殊字符或包含2个以上德语常用词，判定为德语
+            if (hasGermanChars || germanWordCount >= 2) {
+                console.log('检测到德语特征');
+                return 'de-DE';
+            }
+            
+            // 4. 检测是否主要是拉丁字母（可能是英语或德语）
+            const latinChars = text.match(/[a-zA-Z]/g);
+            const latinCount = latinChars ? latinChars.length : 0;
+            
+            // 如果拉丁字母占比很高且有1个德语词，倾向德语
+            if (latinCount > text.length * 0.5 && germanWordCount >= 1) {
+                console.log('检测到德语（基于拉丁字符和德语词）');
+                return 'de-DE';
+            }
+            
+            // 5. 默认英语
+            console.log('默认为英语');
+            return 'en-US';
         }
 
         // 翻译结果朗读（指定语言）
